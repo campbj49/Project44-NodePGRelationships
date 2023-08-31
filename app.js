@@ -11,8 +11,8 @@ const ExpressError = require("./expressError")
 app.use(express.json());
 
 //connections to the route files
-app.use('/company', companyRoutes);
-app.use('/invoice', invoceRoutes);
+app.use('/companies', companyRoutes);
+app.use('/invoices', invoceRoutes);
 
 /** 404 handler */
 
