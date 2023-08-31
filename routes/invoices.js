@@ -1,7 +1,8 @@
 const express = require("express");
 const router = new express.Router();
 const db = require('../db.js');
-const ExpressError = require("../expressError.js")
+const ExpressError = require("../expressError.js");
+const { database } = require("pg/lib/defaults.js");
 
 /** GET /invoices: get list of invoices */
 router.get("/", async function(req, res, next) {
@@ -56,17 +57,28 @@ router.post("/", async function(req,res,next){
 /**PUT /invoices/[id]: update specific invoice */
 router.put("/:id", async function(req,res,next){
     try{
-        //load query rows into array to be submitted to the database
-        let vals = [req.body.amt, req.params.id];
-        const result = await db.query(
-            `UPDATE invoices 
-            SET amt = $1
-            WHERE id = $2
-            RETURNING *`, vals);
-        if(!result.rowCount) {
+        //get invoice being updated to check what it's current paid status is
+        const invoice = await db.query(
+            `SELECT * FROM invoices 
+            WHERE id = $1`, [req.params.id]);
+        if(!invoice.rowCount) {
             let error = new ExpressError("No invoice with that id found", 404);
             return next(error);
         }
+        let paid_date;
+        let today = new Date(Date.now());
+        //Set the paid date according to the instructions of request
+        if(req.body.paid === false) paid_date = null;
+        else if (!invoice.rows[0].paid_date) paid_date = today.toISOString();
+        else paid_date = invoice.rows[0].paid_date;
+
+        //load query rows into array to be submitted to the database
+        let vals = [req.body.amt, paid_date, req.params.id];
+        const result = await db.query(
+            `UPDATE invoices 
+            SET amt = $1, paid_date = $2
+            WHERE id = $3
+            RETURNING *`, vals);
         return res.json({invoice: result.rows})
     }
     catch(error){
