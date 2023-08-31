@@ -29,8 +29,14 @@ router.get("/:code", async function(req,res,next){
         const invoices  = await db.query(
             `SELECT * FROM invoices 
             WHERE comp_code = $1`, [req.params.code]);
+
+        const industries = await db.query(
+            `SELECT industries.industry FROM companies_industries 
+            INNER JOIN industries ON companies_industries.ind_code = industries.code
+            WHERE companies_industries.comp_code = $1`, [req.params.code]);
         return res.json({company: result.rows,
-                        invoices: invoices.rows})
+                        invoices: invoices.rows,
+                        industries: industries.rows})
     }
     catch(error){
         return next(error);
@@ -86,6 +92,26 @@ router.delete("/:code", async function(req,res,next){
             return next(error);
         }
         return res.json({status:"Deleted"})
+    }
+    catch(error){
+        return next(error);
+    }
+})
+
+/**POST /companies/[code]/[ind_code]: attach an industry to a company*/
+router.post("/:code/:ind_code", async function(req,res,next){
+    try{
+        //load query rows into array to be submitted to the database
+        let vals = [req.params.code, req.params.ind_code];
+        const result = await db.query(
+            `INSERT INTO companies_industries
+            VALUES($1, $2)
+            RETURNING *`, vals);
+        if(!result.rowCount) {
+            let error = new ExpressError("No company with that code found", 404);
+            return next(error);
+        }
+        return res.json({company: result.rows})
     }
     catch(error){
         return next(error);

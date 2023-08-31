@@ -4,6 +4,7 @@
 const express = require("express");
 const companyRoutes = require("./routes/companies");
 const invoceRoutes = require("./routes/invoices");
+const industryRoutes = require("./routes/industries")
 
 const app = express();
 const ExpressError = require("./expressError")
@@ -13,6 +14,7 @@ app.use(express.json());
 //connections to the route files
 app.use('/companies', companyRoutes);
 app.use('/invoices', invoceRoutes);
+app.use('/industries', industryRoutes);
 
 /** 404 handler */
 
