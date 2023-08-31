@@ -14,7 +14,7 @@ router.get("/", async function(req, res, next) {
     }
 });
 
-/**GET /companies/[code]: get specific company */
+/**GET /companies/[code]: get specific company and its invoices*/
 router.get("/:code", async function(req,res,next){
     try{
         const result = await db.query(
@@ -24,7 +24,12 @@ router.get("/:code", async function(req,res,next){
             let error = new ExpressError("No company with that code found", 404);
             return next(error);
         }
-        return res.json({company: result.rows})
+
+        const invoices  = await db.query(
+            `SELECT * FROM invoices 
+            WHERE comp_code = $1`, [req.params.code]);
+        return res.json({company: result.rows,
+                        invoices: invoices.rows})
     }
     catch(error){
         return next(error);
@@ -41,10 +46,6 @@ router.post("/", async function(req,res,next){
             VALUES ($1, $2, $3)
             RETURNING  code, name, description`,
             vals);
-        if(!result.rowCount) {
-            let error = new ExpressError("No company with that code found", 404);
-            return next(error);
-        }
         return res.json({company: result.rows})
     }
     catch(error){

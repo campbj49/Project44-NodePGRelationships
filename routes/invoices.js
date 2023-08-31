@@ -24,9 +24,12 @@ router.get("/:id", async function(req,res,next){
             let error = new ExpressError("No invoice with that id found", 404);
             return next(error);
         }
-        const company = await db
+        const company  = await db.query(
+            `SELECT * FROM companies 
+            WHERE code = $1`, [result.rows[0].comp_code]);
 
-        return res.json({invoice: result.rows})
+        return res.json({invoice: result.rows,
+                        company: company.rows})
     }
     catch(error){
         return next(error);
@@ -37,16 +40,12 @@ router.get("/:id", async function(req,res,next){
 router.post("/", async function(req,res,next){
     try{
         //load query rows into array to be submitted to the database
-        let vals = [req.body.id, req.body.name, req.body.description];
+        let vals = [req.body.comp_code, req.body.amt];
         const result = await db.query(
-            `INSERT INTO invoices (id, name, description)
-            VALUES ($1, $2, $3)
-            RETURNING  id, name, description`,
+            `INSERT INTO invoices (comp_code, amt)
+            VALUES ($1, $2)
+            RETURNING  *`,
             vals);
-        if(!result.rowCount) {
-            let error = new ExpressError("No invoice with that id found", 404);
-            return next(error);
-        }
         return res.json({invoice: result.rows})
     }
     catch(error){
@@ -58,12 +57,12 @@ router.post("/", async function(req,res,next){
 router.put("/:id", async function(req,res,next){
     try{
         //load query rows into array to be submitted to the database
-        let vals = [req.body.name, req.body.description, req.params.id];
+        let vals = [req.body.amt, req.params.id];
         const result = await db.query(
             `UPDATE invoices 
-            SET name = $1, description = $2
-            WHERE id = $3
-            RETURNING  id, name, description`, vals);
+            SET amt = $1
+            WHERE id = $2
+            RETURNING *`, vals);
         if(!result.rowCount) {
             let error = new ExpressError("No invoice with that id found", 404);
             return next(error);
